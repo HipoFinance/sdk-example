@@ -510,7 +510,7 @@ export class Model {
             }
 
             const message = this.isStakeTabActive
-                ? createDepositMessage(this.treasury.address, this.amountInNano, referrer)
+                ? createDepositMessage(this.treasury.address, this.amountInNano, 0n, referrer)
                 : createUnstakeMessage(this.wallet.address, this.amountInNano)
 
             const tx: SendTransactionRequest = {
