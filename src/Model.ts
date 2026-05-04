@@ -11,7 +11,7 @@ import {
     createDepositMessage,
     createUnstakeMessage,
 } from '@hipo-finance/sdk'
-import { getHttpV4Endpoint, Network } from '@orbs-network/ton-access'
+import { Network } from '@orbs-network/ton-access'
 import { Address, Dictionary, fromNano, OpenedContract, toNano, TonClient4 } from '@ton/ton'
 import { CHAIN, SendTransactionRequest, TonConnectUI } from '@tonconnect/ui'
 import { action, autorun, computed, makeObservable, observable, runInAction } from 'mobx'
@@ -379,11 +379,19 @@ export class Model {
     connectTonAccess = () => {
         const network = this.network
         clearTimeout(this.timeoutConnectTonAccess)
-        getHttpV4Endpoint({ network })
-            .then(this.setTonClient)
-            .catch(() => {
-                this.timeoutConnectTonAccess = setTimeout(this.connectTonAccess, retryDelay)
-            })
+        // TonAccess is not working anymore
+        // getHttpV4Endpoint({ network })
+        //     .then(this.setTonClient)
+        //     .catch(() => {
+        //         this.timeoutConnectTonAccess = setTimeout(this.connectTonAccess, retryDelay)
+        //     })
+
+        // Switch to fixed endpoint
+        if (network === 'mainnet') {
+            this.setTonClient('https://mainnet-v4.tonhubapi.com')
+        } else {
+            this.setTonClient('https://testnet-v4.tonhubapi.com')
+        }
     }
 
     readTimes = () => {
