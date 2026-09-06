@@ -8,7 +8,12 @@ import './index.css'
 const model = new Model()
 model.init()
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const container = document.getElementById('root')
+if (container == null) {
+    throw new Error('No #root element to mount into')
+}
+
+ReactDOM.createRoot(container).render(
     <React.StrictMode>
         <App model={model} />
     </React.StrictMode>,

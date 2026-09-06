@@ -579,10 +579,11 @@ export class Model {
         this.tonConnectUI.onStatusChange((wallet) => {
             if (wallet != null) {
                 const chain = wallet.account.chain
-                if (
-                    (chain === CHAIN.MAINNET && this.network === 'mainnet') ||
-                    (chain === CHAIN.TESTNET && this.network === 'testnet')
-                ) {
+                // TonConnect types account.chain as `CHAIN | string`, so comparing it straight to a
+                // CHAIN member is an enum-against-string comparison. Widen the expected value to
+                // string instead -- the runtime values are the same two strings either way.
+                const expectedChain: string = this.network === 'mainnet' ? CHAIN.MAINNET : CHAIN.TESTNET
+                if (chain === expectedChain) {
                     this.setAddress(Address.parseRaw(wallet.account.address))
                 } else {
                     void this.tonConnectUI?.disconnect()
