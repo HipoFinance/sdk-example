@@ -1,7 +1,6 @@
 import {
     maxAmountToStake,
     treasuryAddresses,
-    Times,
     Treasury,
     TreasuryConfig,
     Parent,
@@ -44,7 +43,6 @@ export class Model {
     tonBalance?: bigint
     treasury?: OpenedContract<Treasury>
     treasuryState?: TreasuryConfig
-    times?: Times
     walletAddress?: Address
     wallet?: OpenedContract<Wallet>
     walletState?: WalletState
@@ -58,7 +56,6 @@ export class Model {
     tonConnectUI?: TonConnectUI
     lastBlock = 0
     timeoutConnectTonAccess?: ReturnType<typeof setTimeout>
-    timeoutReadTimes?: ReturnType<typeof setTimeout>
     timeoutReadLastBlock?: ReturnType<typeof setTimeout>
     timeoutErrorMessage?: ReturnType<typeof setTimeout>
 
@@ -70,7 +67,6 @@ export class Model {
             tonBalance: observable,
             treasury: observable,
             treasuryState: observable,
-            times: observable,
             walletAddress: observable,
             wallet: observable,
             walletState: observable,
@@ -104,7 +100,6 @@ export class Model {
 
             setTonClient: action,
             setAddress: action,
-            setTimes: action,
             setActiveTab: action,
             setAmount: action,
             setAmountToMax: action,
@@ -120,10 +115,6 @@ export class Model {
 
         autorun(() => {
             this.connectTonAccess()
-        })
-
-        autorun(() => {
-            this.readTimes()
         })
 
         autorun(() => {
@@ -292,12 +283,15 @@ export class Model {
         }
     }
 
+    // round_duration is the interval current_rate took to grow out of previous_rate, measured by
+    // the treasury when the round settled. It is not a round length: rounds the pool did not lend
+    // into never settle, so a skipped round widens it, and annualising by a round length would
+    // report an unchanged APY for a pool whose true rate of growth had halved.
     get apy() {
-        const times = this.times
         const previousRate = this.treasuryState?.previousRate
         const currentRate = this.treasuryState?.currentRate
-        if (times != null && previousRate != null && currentRate != null) {
-            const duration = Number(times.nextRoundSince - times.currentRoundSince)
+        const duration = Number(this.treasuryState?.roundDuration ?? 0n)
+        if (duration > 0 && previousRate != null && currentRate != null) {
             const year = 365 * 24 * 60 * 60
             const compoundingFrequency = year / duration
             const growth = Number(currentRate) / Number(previousRate)
@@ -333,10 +327,6 @@ export class Model {
         this.wallet = undefined
         this.walletState = undefined
         this.lastBlock = 0
-    }
-
-    setTimes = (times?: Times) => {
-        this.times = times
     }
 
     setActiveTab = (activeTab: ActiveTab) => {
@@ -392,26 +382,6 @@ export class Model {
         } else {
             this.setTonClient('https://testnet-v4.tonhubapi.com')
         }
-    }
-
-    readTimes = () => {
-        const tonClient = this.tonClient
-        const treasuryAddress = treasuryAddresses.get(this.network)
-        clearTimeout(this.timeoutReadTimes)
-
-        if (tonClient == null || treasuryAddress == null) {
-            this.setTimes(undefined)
-            return
-        }
-
-        tonClient
-            .open(Treasury.createFromAddress(treasuryAddress))
-            .getTimes()
-            .then(this.setTimes)
-            .catch(() => {
-                clearTimeout(this.timeoutReadTimes)
-                this.timeoutReadTimes = setTimeout(this.readTimes, retryDelay)
-            })
     }
 
     readLastBlock = async () => {
