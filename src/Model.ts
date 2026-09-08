@@ -9,6 +9,7 @@ import {
     ParticipationState,
     createDepositMessage,
     createUnstakeMessage,
+    computeApy,
 } from '@hipo-finance/sdk'
 import { Network } from '@orbs-network/ton-access'
 import { Address, Dictionary, fromNano, OpenedContract, toNano, TonClient4 } from '@ton/ton'
@@ -283,21 +284,13 @@ export class Model {
         }
     }
 
-    // window_duration is the interval current_rate took to grow out of previous_rate, measured by
-    // the treasury across its last two settlement RELEASES. It is about two rounds and never a
-    // round length -- dividing by one would roughly square this, and would also report an
-    // unchanged APY for a pool whose true rate of growth had halved.
+    // This example exists to be copied, so it should show the shortest correct thing rather than
+    // the arithmetic: computeApy annualises over window_duration, which spans two settlement
+    // releases and is about two rounds. Doing it by hand with a round length -- the obvious guess
+    // -- roughly squares the answer.
     get apy() {
-        const previousRate = this.treasuryState?.previousRate
-        const currentRate = this.treasuryState?.currentRate
-        const duration = Number(this.treasuryState?.windowDuration ?? 0n)
-        if (duration > 0 && previousRate != null && currentRate != null) {
-            const year = 365 * 24 * 60 * 60
-            const compoundingFrequency = year / duration
-            const growth = Number(currentRate) / Number(previousRate)
-            const apy = Math.pow(growth, compoundingFrequency) - 1
-            return apy
-        }
+        const state = this.treasuryState
+        return state == null ? undefined : (computeApy(state) ?? undefined)
     }
 
     get apyFormatted() {
