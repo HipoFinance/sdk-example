@@ -283,14 +283,14 @@ export class Model {
         }
     }
 
-    // round_duration is the interval current_rate took to grow out of previous_rate, measured by
-    // the treasury when the round settled. It is not a round length: rounds the pool did not lend
-    // into never settle, so a skipped round widens it, and annualising by a round length would
-    // report an unchanged APY for a pool whose true rate of growth had halved.
+    // window_duration is the interval current_rate took to grow out of previous_rate, measured by
+    // the treasury across its last two settlement RELEASES. It is about two rounds and never a
+    // round length -- dividing by one would roughly square this, and would also report an
+    // unchanged APY for a pool whose true rate of growth had halved.
     get apy() {
         const previousRate = this.treasuryState?.previousRate
         const currentRate = this.treasuryState?.currentRate
-        const duration = Number(this.treasuryState?.roundDuration ?? 0n)
+        const duration = Number(this.treasuryState?.windowDuration ?? 0n)
         if (duration > 0 && previousRate != null && currentRate != null) {
             const year = 365 * 24 * 60 * 60
             const compoundingFrequency = year / duration
