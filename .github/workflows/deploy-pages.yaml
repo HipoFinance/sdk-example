@@ -49,3 +49,22 @@ jobs:
             - name: Deploy to GitHub Pages
               id: deployment
               uses: actions/deploy-pages@v5
+
+            # This page is 22 characters of static HTML and 238 once React has run, so almost
+            # everything here is JavaScript and a deploy that responds tells you nothing at all.
+            # The sibling website proved that on 2026-09-08: one import moved @ton/core ahead of a
+            # polyfill, every app page served 200 with a full shell and rendered nothing, and the
+            # build and the deploy both passed.
+            #
+            # The assertions are labels, never numbers. "APY" and "Exchange rate" only appear once
+            # the SDK has read the treasury over the network, so a pass means the chain layer ran.
+            # The values beside them move every settlement release -- they were 12.33% and 1.1644
+            # yesterday and are 13.69% and 1.1648 today -- so pinning one would fail within hours
+            # and teach everyone to ignore this check.
+            - name: Verify the deployed page actually renders
+              run: |
+                  node scripts/render-check.mjs \
+                    --min-text=150 \
+                    --expect='APY' \
+                    --expect='Exchange rate' \
+                    https://sdk-example.hipo.finance/
